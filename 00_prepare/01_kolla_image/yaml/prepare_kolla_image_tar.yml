@@ -1,7 +1,8 @@
 - hosts: localhost
   vars:
     save_path: /repository/kolla_image
-    tag: myregistry
+    registry_url: myregistry:5000
+    prefix: myregistry_5000_
   tasks:
     - name: podman 설치
       ansible.builtin.dnf:
@@ -26,13 +27,13 @@
         name: "{{ item.name }}"
         tag: "{{ item.tag }}"
       loop: "{{ images_info }}"
-    
-    - name: 태그 변경
-      containers.podman.podman_tag:
-        name: "{{ item.name }}:{{ item.tag }}"
-        tag: "{{ item.name }}:{{ tag }}"
-      loop: "{{ images_info }}"    
 
+    - name: 태그
+      containers.podman.podman_tag:
+        image: "{{ item.name }}:{{ item.tag }}"
+        target_names: "{{ registry_url }}/{{ item.name.split('/')[-1] }}:2023.2-rocky-9"
+      loop: "{{ images_info }}"
+    
     # 저장할 폴더 생성
     - name: tar 저장 폴더 생성
       ansible.builtin.file:
@@ -43,9 +44,10 @@
     # Tar 파일 존재 확인
     - name: Tar 파일 존재 확인
       ansible.builtin.stat:
-        path: "{{ save_path }}/{{ item.name | replace('/', '_') }}.tar"
+        path: "{{ save_path }}/{{ prefix }}{{ item.name.split('/')[-1]  }}.tar"
       register: result
       loop: "{{ images_info }}"
+
     - name: Debug stat results
       debug:
         msg: "File exists: {{ item.stat.exists }}, Path: {{ item.invocation.module_args.path }}"
@@ -54,8 +56,8 @@
     # 받은 이미지를 tar 로 저장
     - name: kolla 이미지 tar 저장
       containers.podman.podman_save:
-        image: "{{ item.0.name }}:{{ tag }}"
-        dest: "{{ save_path }}/{{ item.0.name | replace('/', '_') }}.tar"
+        image: "{{ registry_url }}/{{ item.0.name.split('/')[-1] }}:2023.2-rocky-9"
+        dest: "{{ save_path }}/{{ prefix }}{{ item.0.name.split('/')[-1] }}.tar"
       loop: "{{ images_info | zip(result.results) | list }}"
       when: not item.1.stat.exists
 
