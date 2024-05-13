@@ -45,8 +45,8 @@
 
     - name: registry load
       containers.podman.podman_load:
-        input: ../registry_2.8.3.tar
-
+        input: /repository/kolla_image/myregistry_5000_registry.tar
+   
     - name: 레지스트리 컨테이너 실행
       containers.podman.podman_container:
         name: registry

@@ -26,9 +26,15 @@
       loop: "{{ tar_files.files }}"
       register: loaded_images
 
+    - name: podman login
+      containers.podman.podman_login:
+        registry: myregistry:5000
+        username: admin
+        password: admin
+
     - name: push
       containers.podman.podman_image:
-        name: "{{ item.name }}"
+        name: "{{ item.name.split('/')[-1] }}"
         tag: "{{ item.tag }}"
         push: yes
         push_args:
