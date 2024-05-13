@@ -1,0 +1,57 @@
+- hosts: localhost
+  vars:
+    save_path: /repository/kolla_image
+  tasks:
+    - name: podman 설치
+      ansible.builtin.dnf:
+        name: podman
+        state: latest
+
+    # file 원본 텍스트 : docker.io/kolla/ovn-northd|2023.2-rocky-9
+    - name: kolla 이미지 목록 읽기
+      set_fact:
+        images: "{{ lookup('file', 'kolla_image.list').splitlines() }}"
+
+    # file 원본 텍스트 : docker.io/kolla/ovn-northd|2023.2-rocky-9
+    # split 함수 | 기준으로 자른 결과의 첫번째 : item.split('|')[0] -> docker.io/kolla/ovn-northd
+    # split 함수 | 기준으로 자른 결과의 두번째 : item.split('|')[1] -> 2023.2-rocky-9
+    - name: 이미지 목록에서 name | tag 분리
+      set_fact:
+        images_info: "{{ images_info | default([]) + [{'name': item.split('|')[0], 'tag': item.split('|')[1]}] }}"
+      loop: "{{ images }}"
+
+    - name: kolla 이미지 다운로드
+      containers.podman.podman_image:
+        name: "{{ item.name }}"
+        tag: "{{ item.tag }}"
+      loop: "{{ images_info }}"
+   
+    # 저장할 폴더 생성
+    - name: tar 저장 폴더 생성
+      ansible.builtin.file:
+        path: "{{ save_path }}"
+        state: directory
+        mode: '0755'
+    
+    # Tar 파일 존재 확인
+    - name: Tar 파일 존재 확인
+      ansible.builtin.stat:
+        path: "{{ save_path }}/{{ item.name | replace('/', '_') }}.tar"
+      register: result
+      loop: "{{ images_info }}"
+    - name: Debug stat results
+      debug:
+        msg: "File exists: {{ item.stat.exists }}, Path: {{ item.invocation.module_args.path }}"
+      loop: "{{ result.results }}"
+
+    # 받은 이미지를 tar 로 저장
+    - name: kolla 이미지 tar 저장
+      containers.podman.podman_save:
+        image: "{{ item.0.name }}:{{ item.0.tag }}"
+        dest: "{{ save_path }}/{{ item.0.name | replace('/', '_') }}.tar"
+      loop: "{{ images_info | zip(result.results) | list }}"
+      when: not item.1.stat.exists
+
+
+
+    
