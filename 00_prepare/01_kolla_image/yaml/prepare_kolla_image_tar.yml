@@ -1,6 +1,7 @@
 - hosts: localhost
   vars:
     save_path: /repository/kolla_image
+    tag: myregistry
   tasks:
     - name: podman 설치
       ansible.builtin.dnf:
@@ -25,7 +26,13 @@
         name: "{{ item.name }}"
         tag: "{{ item.tag }}"
       loop: "{{ images_info }}"
-   
+    
+    - name: 태그 변경
+      containers.podman.podman_tag:
+        name: "{{ item.name }}:{{ item.tag }}"
+        tag: "{{ item.name }}:{{ tag }}"
+      loop: "{{ images_info }}"    
+
     # 저장할 폴더 생성
     - name: tar 저장 폴더 생성
       ansible.builtin.file:
@@ -47,11 +54,15 @@
     # 받은 이미지를 tar 로 저장
     - name: kolla 이미지 tar 저장
       containers.podman.podman_save:
-        image: "{{ item.0.name }}:{{ item.0.tag }}"
+        image: "{{ item.0.name }}:{{ tag }}"
         dest: "{{ save_path }}/{{ item.0.name | replace('/', '_') }}.tar"
       loop: "{{ images_info | zip(result.results) | list }}"
       when: not item.1.stat.exists
 
+    # pull image 모두 삭제
+    - name: delete images
+      ansible.builtin.shell:
+        cmd: "podman rmi $(podman images -q) -f"
 
 
     

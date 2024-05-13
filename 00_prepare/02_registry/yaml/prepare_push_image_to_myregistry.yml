@@ -17,11 +17,11 @@
       loop: "{{ tar_files.files }}"
       register: loaded_images
 
-    - name: 이미지에 태그 지정 및 레지스트리에 푸시
-      ansible.builtin.shell:
-        cmd: |
-          image_id=$(podman images --filter reference="{{ item.results[0].image }}:latest" --format '{{{{.ID}}}}')
-          podman tag $image_id {{ registry_url }}/{{ item.item.path | basename | regex_replace('.tar$', '') }}
-          podman push {{ registry_url }}/{{ item.item.path | basename | regex_replace('.tar$', '') }}
-      loop: "{{ loaded_images.results }}"
-      when: item.changed
+#    - name: 이미지에 태그 지정 및 레지스트리에 푸시
+#      ansible.builtin.shell:
+#        cmd: |
+#          image_id=$(podman images --filter reference="{{ item.results[0].image }}:latest" --format '{{{{.ID}}}}')
+#          podman tag $image_id {{ registry_url }}/{{ item.item.path | basename | regex_replace('.tar$', '') }}
+#          podman push {{ registry_url }}/{{ item.item.path | basename | regex_replace('.tar$', '') }}
+#      loop: "{{ loaded_images.results }}"
+#      when: item.changed
