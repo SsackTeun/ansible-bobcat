@@ -1,3 +1,3 @@
 #!/bin/bash
-ansible-playbook ./yaml/prepare_kolla_image_tar.yml
+ansible-playbook ./yaml/mk_rockylinux93.yml
 
