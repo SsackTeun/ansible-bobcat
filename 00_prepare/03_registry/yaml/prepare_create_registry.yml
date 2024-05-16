@@ -57,13 +57,23 @@
         publish:
           - 5000:5000
         volumes:
-          #- ../:/var/lib/registry
           - ../auth:/auth
         env:
           REGISTRY_AUTH: "htpasswd"
           REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
           REGISTRY_AUTH_HTPASSWD_PATH: "/auth/htpasswd"
         restart_policy: unless-stopped
+ 
+   # - name: 수정할 내용 변수에 저장
+   #   set_fact:
+   #      registry_conf_content: |
+   #        [[registry]]
+   #        location = "myregistry:5000"
+   #        insecure = true
 
+    - name: /etc/containers/registries.conf 수정
+      ansible.builtin.shell:
+        cmd: "cp ./registries.conf  /etc/containers/registries.conf"
+      become: true
 
 

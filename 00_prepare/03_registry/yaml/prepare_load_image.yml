@@ -5,6 +5,12 @@
     registry_url: 'myregistry:5000'
     image_directory: '/repository/kolla_image'
   tasks:
+    - name: tar 파일 찾기
+      ansible.builtin.find:
+        paths: "{{ image_directory }}"
+        patterns: '*.tar'
+      register: tar_files
+    
     - name: Kolla 이미지 목록 읽기
       set_fact:
         images: "{{ lookup('file', 'kolla_image.list').splitlines() }}"
@@ -14,18 +20,8 @@
         images_info: "{{ images_info | default([]) + [{'name': item.split('|')[0], 'tag': item.split('|')[1]}] }}"
       loop: "{{ images }}"
 
-    #- name: podman login
-    #  containers.podman.podman_login:
-    #    registry: http://myregistry:5000
-    #    username: admin
-    #    password: admin
-
-    - name: push
-      containers.podman.podman_image:
-        name: "{{ item.name.split('/')[-1] }}"
-        tag: "{{ item.tag }}"
-        push: yes
-        push_args:
-          dest: "{{ registry_url }}/{{ item.name.split('/')[-1] }}:{{ item.tag }}"
-      loop: "{{ images_info }}"
-            
+    - name: registry load
+      containers.podman.podman_load:
+        input: "{{ item.path }}"
+      loop: "{{ tar_files.files }}"
+      register: loaded_images
