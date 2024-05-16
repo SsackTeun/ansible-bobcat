@@ -1,0 +1,13 @@
+repo
+Ceph
+Ceph-noarch
+Ceph-source
+appstream
+baseos
+centos-ceph-reef
+centos-nfv-openvswitch
+centos-openstack-bobcat
+centos-rabbitmq-38
+epel
+epel-cisco-openh264
+extras

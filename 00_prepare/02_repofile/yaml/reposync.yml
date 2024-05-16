@@ -1,0 +1,70 @@
+- hosts: localhost
+  vars:
+    save_dir: '../../repository'
+  become: yes
+  tasks:
+    - name: Install CentOS-Openstack-Bobcat REPO
+      ansible.builtin.dnf:
+        name: centos-release-openstack-bobcat
+        state: present
+
+    - name: Install ceph-reef REPO
+      ansible.builtin.dnf:
+        name: centos-release-ceph-reef
+        state: present
+
+    - name: dnf install cephadm
+      ansible.builtin.dnf:
+        name: cephadm
+        state: present
+
+    - name: dnf yum-utils for reposync
+      ansible.builtin.dnf:
+        name: yum-utils
+        state: present
+
+    - name: Install EPEL REPO
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+
+    - name: Install Ceph-common
+      ansible.builtin.dnf:
+        name: ceph-common
+        state: present
+
+    - name: Install Ceph-source / Ceph-noarch REPO
+      ansible.builtin.command:
+        cmd: cephadm add-repo --release reef
+
+    - name: Create Repolist file
+      ansible.builtin.shell:
+        cmd: dnf repolist | awk '{print $1}' > ./repolist
+    
+    - name: Check directory exist
+      ansible.builtin.file:
+        path: "{{ save_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Read repolist
+      set_fact:
+        repo_ids: "{{ lookup('file', './repolist').splitlines() }}"
+  
+    - name: Do Reposync
+      block:
+        - name: Sync repo using reposync 
+          ansible.builtin.shell:
+            cmd: "reposync --repo={{ item }} --download-path={{ save_dir }} --download-metadata"
+            creates: "{{ save_dir }}/{{ item }}"
+          loop: "{{ repo_ids }}"
+          register: reposync_result
+      rescue:
+        - name: Kill all running reposync processes if failed
+          ansible.builtin.shell:
+            cmd: "ps aux | grep '[r]eposync'| awk '{print $2}' | xargs --no-run-if-empty kill -9"
+            ignore_errors: yes
+   
+     
