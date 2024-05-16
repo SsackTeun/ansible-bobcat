@@ -29,7 +29,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/repository/kolla.bobcat/openstack/pyenv"
+set -gx VIRTUAL_ENV "/openstack/ansible-bobcat/pyenv"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

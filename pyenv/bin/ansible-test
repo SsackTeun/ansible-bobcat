@@ -1,4 +1,4 @@
-#!/repository/kolla.bobcat/openstack/pyenv/bin/python3
+#!/openstack/ansible-bobcat/pyenv/bin/python3
 # PYTHON_ARGCOMPLETE_OK
 """Command line entry point for ansible-test."""
 

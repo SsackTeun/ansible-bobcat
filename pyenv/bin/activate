@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/repository/kolla.bobcat/openstack/pyenv"
+VIRTUAL_ENV="/openstack/ansible-bobcat/pyenv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
