@@ -7,7 +7,6 @@
     change_tag: 1.25.5
     hostname: repository
     registry_url: localhost
-    save_path: '/repository/yum.repo'
   tasks:
     - name: nginx pull
       containers.podman.podman_image:
@@ -30,8 +29,12 @@
         hostname: "{{ hostname }}"
         volumes:
           - ../repo:/etc/yum.repos.d
-          - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+          - ../nginx/nginx.conf:/etc/nginx/nginx.conf
           - /repository:/repository:ro
         restart_policy: unless-stopped
         interactive: false # option : -i
         tty: false # option -t
+
+    - name: SELINUX_ chcon -R -t httpd_sys_content_t 
+      ansible.builtin.shell:
+        cmd: "chcon -R -t httpd_sys_content_t /repository/"

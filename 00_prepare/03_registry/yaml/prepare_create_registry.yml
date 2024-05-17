@@ -27,13 +27,13 @@
 
     - name: htpasswd 저장할 위치 생성
       ansible.builtin.file:
-        path: ../auth
+        path: /repository/auth
         state: directory
         mode: '0755'      
           
     - name: htpasswd 파일 생성
       ansible.builtin.shell:
-        cmd: htpasswd -Bbn admin admin > ../auth/htpasswd
+        cmd: htpasswd -Bbn admin admin > /repository/auth/htpasswd
 
     - name: 디렉토리 존재 검사(마운트 디렉토리)
       ansible.builtin.file:
@@ -41,7 +41,7 @@
         state: directory
         mode: '0755'
       loop:
-        - ../auth
+        - /repository/auth
 
     - name: registry load
       containers.podman.podman_load:
@@ -57,7 +57,7 @@
         publish:
           - 5000:5000
         volumes:
-          - ../auth:/auth
+          - /repository/auth:/auth
         env:
           REGISTRY_AUTH: "htpasswd"
           REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
