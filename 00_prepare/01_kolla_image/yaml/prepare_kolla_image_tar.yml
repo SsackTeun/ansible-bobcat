@@ -1,6 +1,6 @@
 - hosts: localhost
   vars:
-    save_path: ../../repository/kolla_image # tar 저장 위치
+    save_path: /repository/kolla_image # tar 저장 위치
     registry_url: myregistry:5000 # TAG 명령어로 바꿀 registry url
     prefix: myregistry_5000_ # tar 파일 앞에 붙을 접두어
     tag: 2023.2-rocky-9 # TAG 명령어로 바꿀 tag 명(변경하지 않으려면 기존 이름 그대로 적어주기)
