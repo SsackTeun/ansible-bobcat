@@ -38,3 +38,7 @@
     - name: SELINUX_ chcon -R -t httpd_sys_content_t 
       ansible.builtin.shell:
         cmd: "chcon -R -t httpd_sys_content_t /repository/"
+
+    - name: 'cp /etc/yum.repos.d'
+      ansible.builtin.shell:
+        cmd: "cp -R ../repo/myregistry.repo /etc/yum.repos.d/"
