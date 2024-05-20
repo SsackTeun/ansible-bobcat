@@ -1,6 +1,6 @@
 - hosts: localhost
   vars:
-    save_dir: '../../repository'
+    save_dir: '/repository'
   become: yes
   tasks:
     - name: Install CentOS-Openstack-Bobcat REPO
