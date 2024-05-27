@@ -1,0 +1,38 @@
+- hosts: ntp_client
+  vars:
+    hostname: time.server.net
+    ip: 10.130.39.200
+  tasks:
+    - name: dnf install chrony(Ensure)
+      ansible.builtin.dnf:
+        name: chrony
+        state: present
+
+    - name: backup chrony.conf(config backup)
+      ansible.builtin.copy:
+        src: /etc/chrony.conf
+        dest: /etc/chrony.conf.bak
+        remote_src: yes
+        force: yes
+
+    - name: write in chrony.conf
+      ansible.builtin.lineinfile:
+        path: /etc/chrony.conf
+        insertafter: '^# Please consider joining the pool \(https://www.pool.ntp.org/join.html\).'
+        line: 'server {{ hostname }} iburst'
+        state: present
+
+    - name: restart chrony service
+      ansible.builtin.service:
+        name: chronyd
+        state: restarted
+
+    - name: add hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ item }}"
+        state: present
+        create: yes
+      with_items:
+        - '{{ ip }} {{ hostname }}'
+       
