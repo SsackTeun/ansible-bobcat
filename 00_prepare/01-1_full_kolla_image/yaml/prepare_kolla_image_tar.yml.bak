@@ -1,0 +1,72 @@
+---
+- name: 도커허브로 부터 org kolla 의 image 를 pull
+  hosts: localhost
+  gather_facts: no
+  vars:
+    organization: "kolla"
+    max_pages: 1
+    tag_to_search: "2023.2-rocky-9"
+    registry_url: "docker.io"
+    output_file: "repository.list"
+    repositories: []
+
+  tasks:
+    - name: Docker Hub 의 ORG 를 fetch
+      vars:
+        page: "{{ item }}"
+      ansible.builtin.uri:
+        url: "https://hub.docker.com/v2/repositories/{{ organization }}/?page={{ page }}&ordering=last_updated&page_size=25"
+        return_content: yes
+      register: repo_response
+      loop: "{{ range(1, max_pages + 1) | list }}"
+      changed_when: false
+
+    - name: 응답값 json 중에서 name 속성의 값을 추출하여, repositories 에 저장
+      set_fact:
+        repositories: "{{ repositories | default([]) + item.json.results | map(attribute='name') | list }}"
+      loop: "{{ repo_response.results | selectattr('json', 'defined') | list }}"
+      when: item.json.results is defined
+
+    - name: 가져온 목록을 출력
+      debug:
+        var: repositories
+    
+    - name: 목록을 repository.list 파일에 쓰기 합니다
+      ansible.builtin.copy:
+        content: |
+          {%  for repository in repositories %}
+          {{ repository }}
+          {% endfor %}
+        dest: "{{ lookup('env', 'PWD') }}/yaml/{{ output_file }}"
+
+    - name: Fetch tags for each repository
+      ansible.builtin.uri:
+        url: "https://hub.docker.com/v2/repositories/{{ organization }}/{{ item }}/tags/?page={{ page }}"
+        method: GET
+      loop: "{{ repositories }}"
+      loop_control:
+        loop_var: repository
+      register: tag_responses
+      failed_when: false
+
+#    - name: Check if specific tag exists and write to file
+#      ansible.builtin.lineinfile:
+#        path: "{{ output_file }}"
+#        line: "{{ organization }}/{{ repo }}:{{ item.name }}"
+#        create: yes
+#      loop: "{{ tag_response.json.results }}"
+#      loop_control:
+#        loop_var: item
+#      vars:
+#        tag_name: "{{ item.name }}"
+#      when: tag_name == tag_to_search
+#
+#
+#    - name: Pull images with the specific tag from the repository list file
+#      vars:
+#        image: "{{ item }}"
+#      containers.podman.podman_image:
+#        name: "{{ registry_url }}/{{ image }}"
+#        state: present
+#      with_lines: cat {{ output_file }}
+#

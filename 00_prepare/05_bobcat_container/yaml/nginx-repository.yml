@@ -1,0 +1,44 @@
+- hosts: localhost
+  vars:
+    image_name: docker.io/nginx
+    name: nginx
+    tag: 1.25.5
+    change_name: repository-nginx
+    change_tag: 1.25.5
+    hostname: repository
+    registry_url: localhost
+  tasks:
+    - name: nginx pull
+      containers.podman.podman_image:
+        name: "{{ image_name }}"
+        tag: "{{ tag }}"
+
+    - name: 태그 수정
+      containers.podman.podman_tag:
+        image: "{{ image_name }}:{{ tag }}"
+        target_names: "{{ registry_url }}/{{ change_name }}:{{ change_tag }}"
+    
+    - name: 컨테이너 실행
+      containers.podman.podman_container:
+        name: "{{ name }}"
+        image: "{{ change_name }}:{{ change_tag }}"
+        state: started
+        recreate: false
+        ports:
+          - "8080:80"
+        hostname: "{{ hostname }}"
+        volumes:
+          - ../repo:/etc/yum.repos.d
+          - ../nginx/nginx.conf:/etc/nginx/nginx.conf
+          - /repository:/repository:ro
+        restart_policy: unless-stopped
+        interactive: false # option : -i
+        tty: false # option -t
+
+    - name: SELINUX_ chcon -R -t httpd_sys_content_t 
+      ansible.builtin.shell:
+        cmd: "chcon -R -t httpd_sys_content_t /repository/"
+
+    - name: 'cp /etc/yum.repos.d'
+      ansible.builtin.shell:
+        cmd: "cp -R ../repo/myregistry.repo /etc/yum.repos.d/"

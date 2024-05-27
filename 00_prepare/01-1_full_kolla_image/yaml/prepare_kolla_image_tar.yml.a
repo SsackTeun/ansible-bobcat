@@ -1,0 +1,85 @@
+---
+- name: Fetch all image lists from Docker Hub
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    organization: "kolla"
+    tag_to_search: "2023.2-rocky-9"
+    output_file: "./output.list"
+    page: 1
+    all_images: []
+
+  tasks:
+    - name: Fetch image list from Docker Hub
+      ansible.builtin.uri:
+        url: "https://hub.docker.com/v2/repositories/{{ organization }}/?page_size=100&page={{ page }}"
+        return_content: yes
+      register: image_list_response
+
+    - name: Append images to list
+      set_fact:
+        all_images: "{{ all_images + image_list_response.json.results }}"
+      when: image_list_response.json.results | length > 0
+
+    - name: Check if more pages to fetch
+      set_fact:
+        more_pages: "{{ image_list_response.json.next is defined }}"
+
+    - name: Increment page number
+      set_fact:
+        page: "{{ page + 1 }}"
+      when: more_pages
+
+    - name: Fetch remaining pages of images
+      when: more_pages
+      block:
+        - name: Fetch image list from Docker Hub (page {{ page }})
+          ansible.builtin.uri:
+            url: "https://hub.docker.com/v2/repositories/{{ organization }}/?page_size=100&page={{ page }}"
+            return_content: yes
+          register: image_list_response
+          until: image_list_response.json.next is not defined
+          retries: 10
+          delay: 2
+
+        - name: Append images to list
+          set_fact:
+            all_images: "{{ all_images + image_list_response.json.results }}"
+          when: image_list_response.json.results | length > 0
+
+        - name: Check if more pages to fetch
+          set_fact:
+            more_pages: "{{ image_list_response.json.next is defined }}"
+
+        - name: Increment page number
+          set_fact:
+            page: "{{ page + 1 }}"
+          when: more_pages
+
+    - name: Initialize images with tag list
+      set_fact:
+        images_with_tag: []
+
+    - name: Fetch tags for each image
+      ansible.builtin.uri:
+        url: "https://hub.docker.com/v2/repositories/{{ organization }}/{{ item.name }}/tags/?page_size=100"
+        return_content: yes
+      register: tag_list_response
+      loop: "{{ all_images }}"
+      loop_control:
+        loop_var: item
+    
+    - name: Check if specific tag exists
+      ansible.builtin.set_fact:
+        images_with_tag: "{{ images_with_tag + [ item.name + ':' + tag_to_search ] }}"
+      when: "'results' in tag_list_response.json and tag_to_search in tag_list_response.json.results | map(attribute='name') | list"
+
+
+    - name: Write image names and tags to file
+      lineinfile:
+        path: "{{ output_file }}"
+        line: "{{ item }}"
+        create: yes
+      loop: "{{ images_with_tag }}"
+

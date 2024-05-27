@@ -1,0 +1,30 @@
+---
+- name: 조직이름 Kolla 로 부터 모든 Repository 를 pull 하기
+  hosts: localhost
+  gather_facts: no
+  vars:
+    organization: "kolla"
+    current_page: 1
+    page_size: 100
+    end_page: 2
+  tasks:
+
+    - name: Repositories list 저장할 리스트 선언
+      set_fact:
+        repositories: []
+
+    - name: Ansible URI 모듈로 요청
+      ansible.builtin.uri:
+        url: "https://hub.docker.com/v2/repositories/{{ organization }}/?page={{ current_page }}&ordering=last_updated&page_size={{ page_size }}"
+        method: GET
+        status_code: 200
+      register: repo_response
+      until: repo_response.status == 200
+      loop: "{{ range(1, end_page + 1) }}"
+      loop_control:
+        loop_var: current_page
+      retries: -1 
+ 
+    - name: debug
+      debug:
+        var: "{{ repo_response | community.general.json_query('repo_response.status') }}"
